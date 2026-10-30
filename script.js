@@ -1,10 +1,10 @@
 const firebaseConfig = {
-  apiKey: "AIzaSyDryXEeO34ZzxFOAvEo1EPoFhKQTe3Bk0k",
-  authDomain: "maratona-halloween.firebaseapp.com",
-  projectId: "maratona-halloween",
-  storageBucket: "maratona-halloween.firebasestorage.app",
-  messagingSenderId: "883352584122",
-  appId: "1:883352584122:web:84d58a77eee563d2cfe783"
+  apiKey: "AIzaSyCET297r7tZjOPDyQ_tCuTVCrea12L5-8Q",
+  authDomain: "nossonatal.firebaseapp.com",
+  projectId: "nossonatal",
+  storageBucket: "nossonatal.firebasestorage.app",
+  messagingSenderId: "29554792589",
+  appId: "1:29554792589:web:a41d2c0848406da4daaac4"
 };
 
 const WEEK_TITLES = {
