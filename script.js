@@ -829,3 +829,4 @@ document.addEventListener('DOMContentLoaded', () => {
     fire(0.1, { spread: 120, startVelocity: 45, colors: ['#ff6b00'] });
   }
 });
+
