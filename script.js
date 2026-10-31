@@ -634,7 +634,7 @@ document.addEventListener('DOMContentLoaded', () => {
         card.id = `card-${movie.id}`;
 
         card.innerHTML = `
-          <span class="card-day-tag">📅 ${movie.day}</span>
+          <span class="card-streaming-tag">${getStreamingDisplay(movie.streaming)}</span>
           <div class="card-admin-actions">
             <button type="button" class="btn-card-util btn-edit-movie" data-id="${movie.id}" title="Editar Filme">✏️</button>
             <button type="button" class="btn-card-util btn-delete-movie" data-id="${movie.id}" title="Excluir Filme">🗑️</button>
