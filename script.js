@@ -1,832 +1,1185 @@
-const firebaseConfig = {
-  apiKey: "AIzaSyCET297r7tZjOPDyQ_tCuTVCrea12L5-8Q",
-  authDomain: "nossonatal.firebaseapp.com",
-  projectId: "nossonatal",
-  storageBucket: "nossonatal.firebasestorage.app",
-  messagingSenderId: "29554792589",
-  appId: "1:29554792589:web:a41d2c0848406da4daaac4"
-};
-
-const WEEK_TITLES = {
-  1: "Clássicos & Família",
-  2: "Comédias & Romances",
-  3: "Animações & Magia",
-  4: "Reta Final & Véspera"
-};
-
-const MAX_SYNOPSIS = 160;
-const LOCAL_AUTH_CACHE_KEY = 'xmas_auth_cached';
-
-function parseWeekSearch(term) {
-  const clean = term.toLowerCase().trim();
-  const match = clean.match(/^semana\s*0*(\d+)$/);
-  return match ? parseInt(match[1], 10) : null;
+:root {
+  --bg-body: #051014;
+  --bg-container: #0b1e26;
+  --bg-week: #112c38;
+  --bg-card: #183e4f;
+  --bg-card-hover: #1e4f66;
+  --border-color: #276785;
+  --red-primary: #E63946;
+  --red-hover: #F25C69;
+  --red-glow: rgba(230, 57, 70, 0.45);
+  --green-accent: #2A9D8F;
+  --green-light: #8AB17D;
+  --text-main: #f3f0fa;
+  --text-muted: #958cb3;
+  --danger-color: #ff3366;
+  --danger-hover: #ff1a53;
+  --danger-bg: #3f1d28;
+  --success-color: #00ff88;
+  --watched-bg: #1c1c22;
+  --watched-border: #2e2e38;
+  --watched-text: #71717a;
 }
 
-function groupMoviesByWeek(moviesList) {
-  const grouped = {};
-  moviesList.forEach(movie => {
-    const week = movie.weekNumber || 1;
-    if (!grouped[week]) grouped[week] = [];
-    grouped[week].push(movie);
-  });
-  return Object.keys(grouped).sort((a, b) => a - b).map(weekNum => ({
-    weekNumber: parseInt(weekNum, 10),
-    weekTitle: WEEK_TITLES[weekNum] || `Semana ${weekNum}`,
-    movies: grouped[weekNum]
-  }));
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
-function resolveCoverUrl(movie) {
-  const titleDisplay = movie.title.split(' ')[0];
-  const fallbackSvg = `data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='500' height='750' viewBox='0 0 500 750'%3E%3Crect width='500' height='750' fill='%23140f24'/%3E%3Ctext x='50%25' y='48%25' fill='%23E63946' font-family='Arial' font-weight='bold' font-size='32' text-anchor='middle' dominant-baseline='middle'%3E${encodeURIComponent(titleDisplay)}%3C/text%3E%3Ctext x='50%25' y='55%25' fill='%23E63946' font-size='48' text-anchor='middle' dominant-baseline='middle'%3E%F0%9F%8E%84%3C/text%3E%3C/svg%3E`;
-
-  if (!movie.cover || movie.cover.trim() === '') {
-    return fallbackSvg;
-  }
-  const cleanCover = movie.cover.trim();
-
-  if (cleanCover.startsWith('data:image/')) {
-    return cleanCover;
-  }
-
-  if (cleanCover.startsWith('http://') || cleanCover.startsWith('https://')) {
-    return `https://images.weserv.nl/?url=${encodeURIComponent(cleanCover)}&default=${encodeURIComponent(fallbackSvg)}`;
-  }
-  return cleanCover;
+body {
+  background-color: var(--bg-body);
+  color: var(--text-main);
+  font-family: 'Inter', sans-serif;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  if (typeof firebase === 'undefined') {
-    console.error("Firebase SDK não carregou! Verifique os scripts no index.html.");
-    return;
+.is-hidden {
+  display: none !important;
+}
+
+/* =========================================
+   TELA DE LOGIN
+   ========================================= */
+.login-container {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem 1rem;
+  animation: fadeIn 0.3s ease forwards;
+}
+
+.login-card {
+  background: var(--bg-container);
+  border: 1px solid var(--border-color);
+  border-radius: 18px;
+  padding: 2.2rem 1.6rem;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 0 35px rgba(0, 0, 0, 0.8), 0 0 15px rgba(42, 157, 143, 0.2);
+  transition: border-color 0.3s, box-shadow 0.3s, transform 0.3s;
+}
+
+.login-header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.login-icon {
+  font-size: 3rem;
+  display: block;
+  filter: drop-shadow(0 0 10px var(--red-glow));
+  margin-bottom: 0.3rem;
+}
+
+.login-title {
+  font-family: 'Berkshire Swash', cursive;
+  font-size: 2.2rem;
+  color: var(--red-primary);
+  letter-spacing: 1px;
+}
+
+.login-subtitle {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.btn-submit-login {
+  width: 100%;
+  padding: 0.85rem;
+  font-size: 0.95rem;
+  margin-top: 0.75rem;
+}
+
+.btn-secondary-link {
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: var(--green-light);
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-top: 0.85rem;
+  padding: 0.5rem;
+  cursor: pointer;
+  transition: color 0.2s, text-shadow 0.2s;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.btn-secondary-link:hover {
+  color: var(--red-primary);
+  text-shadow: 0 0 8px var(--red-glow);
+}
+
+.forgot-pass-wrapper {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.35rem;
+}
+
+.btn-forgot-link {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.2s, text-shadow 0.2s;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.btn-forgot-link:hover {
+  color: var(--red-primary);
+  text-shadow: 0 0 6px var(--red-glow);
+}
+
+/* =========================================
+   CAMPO DE SENHA COM BOTÃO OLHINHO
+   ========================================= */
+.password-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.password-wrapper input {
+  width: 100%;
+  padding-right: 2.8rem !important;
+}
+
+.btn-toggle-pass {
+  position: absolute;
+  right: 0.75rem;
+  background: transparent;
+  border: none;
+  font-size: 1.15rem;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.65;
+  transition: opacity 0.2s, transform 0.15s;
+  user-select: none;
+}
+
+.btn-toggle-pass:hover {
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+.login-feedback {
+  min-height: 1.2rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-align: center;
+  margin: 0.4rem 0 0.6rem;
+}
+
+.login-feedback.is-error {
+  color: var(--danger-color);
+}
+
+.login-feedback.is-success {
+  color: var(--success-color);
+}
+
+.login-card.is-shaking {
+  animation: shake 0.4s ease-in-out;
+  border-color: var(--danger-color);
+  box-shadow: 0 0 30px rgba(255, 51, 102, 0.6);
+}
+
+.login-card.is-success {
+  border-color: var(--success-color);
+  box-shadow: 0 0 35px rgba(0, 255, 136, 0.6);
+  transform: scale(1.02);
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-8px); }
+  40%, 80% { transform: translateX(8px); }
+}
+
+/* =========================================
+   CONTAINER PRINCIPAL
+   ========================================= */
+.app-wrapper {
+  width: 100%;
+  max-width: 1440px;
+  background-color: var(--bg-container);
+  border: 1px solid var(--border-color);
+  min-height: 100vh;
+  padding: 1.25rem 1rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  animation: fadeIn 0.3s ease forwards;
+}
+
+.header-top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  gap: 0.75rem;
+}
+
+.user-greeting {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: rgba(26, 20, 48, 0.8);
+  border: 1px solid var(--border-color);
+  padding: 0.45rem 0.9rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.greeting-icon {
+  font-size: 1rem;
+}
+
+.greeting-text strong {
+  color: var(--red-primary);
+  font-weight: 700;
+  text-shadow: 0 0 8px var(--red-glow);
+}
+
+.btn-logout {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.5rem 0.95rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+  white-space: nowrap;
+}
+
+.btn-logout:hover {
+  border-color: var(--danger-color);
+  color: #ffccd5;
+}
+
+.btn-primary-action {
+  background: var(--red-primary);
+  color: #0b0813;
+  border: none;
+  font-weight: 700;
+  font-size: 0.85rem;
+  padding: 0.65rem 1.1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+}
+
+.btn-primary-action:hover {
+  background: var(--red-hover);
+  transform: translateY(-1px);
+}
+
+.app-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.main-title {
+  font-family: 'Berkshire Swash', cursive;
+  font-size: 2.6rem;
+  color: var(--red-primary);
+  text-shadow: 0 0 15px var(--red-glow);
+  letter-spacing: 1px;
+  line-height: 1.1;
+  margin-bottom: 0.4rem;
+}
+
+.subtitle {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.progress-section {
+  background: rgba(11, 8, 19, 0.95);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 0.9rem 1.2rem;
+  margin-bottom: 1.5rem;
+  position: sticky;
+  top: 10px;
+  z-index: 10;
+  backdrop-filter: blur(8px);
+}
+
+.progress-labels {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--green-light);
+  margin-bottom: 0.5rem;
+}
+
+.progress-bar-track {
+  width: 100%;
+  height: 12px;
+  background-color: #120e1e;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.progress-bar-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--green-accent), var(--red-primary));
+  box-shadow: 0 0 10px var(--red-glow);
+  border-radius: 6px;
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* =========================================
+   BARRA DE CONTROLES (BUSCA + NOVO FILME)
+   ========================================= */
+.controls-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 2rem;
+}
+
+.search-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  flex: 1;
+}
+
+.search-icon {
+  position: absolute;
+  left: 1rem;
+  font-size: 1rem;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+#search-input {
+  width: 100%;
+  padding: 0.85rem 2.6rem 0.85rem 2.8rem;
+  background-color: var(--bg-week);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  color: var(--text-main);
+  font-family: inherit;
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.25s, box-shadow 0.25s;
+}
+
+#search-input:focus {
+  border-color: var(--red-primary);
+  box-shadow: 0 0 10px var(--red-glow);
+}
+
+#search-input::placeholder {
+  color: var(--text-muted);
+  opacity: 0.7;
+}
+
+.btn-clear-search {
+  position: absolute;
+  right: 0.8rem;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1rem;
+  cursor: pointer;
+  display: none;
+  padding: 0.2rem 0.4rem;
+}
+
+.btn-clear-search.is-active {
+  display: block;
+}
+
+.btn-clear-search:hover {
+  color: var(--red-primary);
+}
+
+.btn-add-movie-highlight {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.85rem 1.4rem;
+  font-size: 0.95rem;
+  border-radius: 12px;
+  white-space: nowrap;
+  box-shadow: 0 0 15px rgba(230, 57, 70, 0.25);
+}
+
+.no-results {
+  text-align: center;
+  padding: 3.5rem 1rem;
+  color: var(--text-muted);
+  background-color: var(--bg-week);
+  border-radius: 14px;
+  border: 1px dashed var(--border-color);
+}
+
+.empty-state-subtitle {
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--green-light);
+}
+
+/* =========================================
+   SEMANAS & CARDS
+   ========================================= */
+.week-container {
+  background-color: var(--bg-week);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 1.25rem;
+  margin-bottom: 2rem;
+  animation: fadeIn 0.35s ease forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.week-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px dashed var(--border-color);
+  padding-bottom: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.week-title {
+  font-family: 'Berkshire Swash', cursive;
+  font-size: 1.8rem;
+  color: var(--red-primary);
+  letter-spacing: 0.5px;
+}
+
+.week-badge {
+  background: rgba(42, 157, 143, 0.15);
+  border: 1px solid var(--green-accent);
+  color: var(--green-light);
+  padding: 0.25rem 0.7rem;
+  border-radius: 14px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.movies-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+}
+
+.movie-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  transition: background-color 0.25s, border-color 0.25s, transform 0.25s;
+}
+
+.card-day-tag {
+  background: rgba(11, 8, 19, 0.85);
+  color: var(--red-primary);
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.35rem 0.7rem;
+  border-bottom-right-radius: 8px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 2;
+  border-right: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.card-admin-actions {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 3;
+  display: flex;
+  gap: 4px;
+  background: rgba(11, 8, 19, 0.85);
+  padding: 0.25rem 0.5rem;
+  border-bottom-left-radius: 8px;
+  border-left: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.btn-card-util {
+  background: transparent;
+  border: none;
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 0.2rem;
+  line-height: 1;
+  opacity: 0.8;
+  transition: opacity 0.2s;
+}
+
+.btn-card-util:hover {
+  opacity: 1;
+}
+
+.poster-container {
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  position: relative;
+  overflow: hidden;
+  background-color: #120e1e;
+}
+
+.poster-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.3s ease, filter 0.3s ease;
+}
+
+.card-body {
+  padding: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+.genre-badge {
+  display: inline-block;
+  align-self: flex-start;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--green-light);
+  background: rgba(42, 157, 143, 0.15);
+  border-radius: 4px;
+  padding: 0.2rem 0.5rem;
+  margin-bottom: 0.4rem;
+}
+
+.movie-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 0.4rem;
+  line-height: 1.25;
+}
+
+.movie-synopsis {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+  margin-bottom: 1.2rem;
+  flex-grow: 1;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.button-group {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+  margin-top: auto;
+}
+
+.btn-action {
+  padding: 0.6rem 0.3rem;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--border-color);
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--text-muted);
+  transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.btn-action.active-unwatched {
+  background-color: var(--danger-bg);
+  border-color: var(--danger-color);
+  color: #ffccd5;
+}
+
+.btn-action.active-watched {
+  background-color: var(--red-primary);
+  border-color: var(--red-primary);
+  color: #0c0a10;
+  font-weight: 700;
+  box-shadow: 0 0 8px var(--red-glow);
+}
+
+.movie-card.is-watched {
+  background-color: var(--watched-bg);
+  border-color: var(--watched-border);
+}
+
+.movie-card.is-watched .poster-img {
+  filter: grayscale(100%) opacity(35%);
+}
+
+.movie-card.is-watched .movie-title {
+  color: var(--watched-text);
+  text-decoration: line-through;
+}
+
+.movie-card.is-watched .movie-synopsis,
+.movie-card.is-watched .card-day-tag,
+.movie-card.is-watched .genre-badge {
+  color: #52525b;
+  background: transparent;
+  border-color: transparent;
+}
+
+.load-more-container {
+  text-align: center;
+  margin-top: 1.5rem;
+}
+
+.btn-load-more {
+  width: 100%;
+  background: transparent;
+  border: 2px dashed var(--red-primary);
+  color: var(--red-primary);
+  padding: 0.85rem;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+/* =========================================
+   RODAPÉ
+   ========================================= */
+.app-footer {
+  margin-top: auto;
+  padding: 3rem 1rem 1rem;
+  text-align: center;
+}
+
+.footer-divider {
+  width: 100%;
+  max-width: 320px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border-color), var(--green-accent), var(--border-color), transparent);
+  margin: 0 auto 1.25rem;
+}
+
+.footer-text {
+  font-size: 0.85rem;
+  color: var(--text-main);
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  margin-bottom: 0.35rem;
+}
+
+.footer-text span {
+  color: var(--red-primary);
+  font-weight: 700;
+  text-shadow: 0 0 10px var(--red-glow);
+}
+
+.footer-subtext {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  letter-spacing: 0.2px;
+}
+
+/* =========================================
+   MODAIS & FORMULÁRIOS
+   ========================================= */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(7, 5, 12, 0.85);
+  backdrop-filter: blur(8px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+.modal-overlay.is-active {
+  display: flex !important;
+}
+
+.modal-content {
+  background: var(--bg-week);
+  border: 2px solid var(--red-primary);
+  border-radius: 18px;
+  padding: 2rem;
+  width: 100%;
+  max-width: 480px;
+  text-align: center;
+  margin: auto;
+  max-height: 95vh;
+  overflow-y: auto;
+}
+
+.form-modal-content {
+  background: #161028;
+  border: 1px solid var(--green-accent);
+  box-shadow: 0 0 30px rgba(42, 157, 143, 0.25);
+  text-align: left;
+  max-width: 580px;
+}
+
+.register-modal-content {
+  max-width: 460px;
+}
+
+.forgot-modal-content {
+  max-width: 440px;
+}
+
+.register-title,
+.forgot-title {
+  text-align: center;
+  font-size: 2rem;
+  margin-bottom: 0.3rem;
+}
+
+.register-desc,
+.forgot-desc {
+  text-align: center;
+  font-size: 0.85rem;
+  margin-bottom: 1.25rem;
+}
+
+.password-rules {
+  list-style: none;
+  padding: 0;
+  margin-top: 0.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.password-rules li {
+  font-size: 0.75rem;
+  color: var(--danger-color);
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.password-rules li.valid {
+  color: var(--success-color);
+}
+
+.modal-icon {
+  font-size: 3rem;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.modal-title {
+  font-family: 'Berkshire Swash', cursive;
+  font-size: 2.2rem;
+  color: var(--red-primary);
+  margin-bottom: 1.25rem;
+}
+
+.modal-desc {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.modal-btn {
+  margin-top: 1.5rem;
+  width: 100%;
+  background: var(--red-primary);
+  color: #0b0813;
+  border: none;
+  padding: 0.85rem;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.delete-modal-content {
+  border-color: var(--danger-color);
+  box-shadow: 0 0 25px rgba(255, 51, 102, 0.3);
+  max-width: 420px;
+}
+
+.delete-title {
+  color: var(--danger-color);
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.delete-modal-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-top: 1.75rem;
+}
+
+.btn-danger-action {
+  background: var(--danger-color);
+  color: #ffffff;
+  border: none;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  box-shadow: 0 0 10px rgba(255, 51, 102, 0.4);
+  transition: background-color 0.2s, transform 0.2s;
+}
+
+.btn-danger-action:hover {
+  background: var(--danger-hover);
+  transform: translateY(-1px);
+}
+
+.form-group {
+  margin-bottom: 1.25rem;
+}
+
+.form-group label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--green-light);
+  margin-bottom: 0.4rem;
+}
+
+.form-group input, 
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 0.85rem 1rem;
+  background-color: #0e0a1a;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  color: var(--text-main);
+  font-family: inherit;
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
+}
+
+.form-group select {
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23E63946' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: calc(100% - 14px) center;
+  padding-right: 2.2rem;
+}
+
+.form-group select option {
+  background-color: #161028;
+  color: var(--text-main);
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  border-color: var(--red-primary);
+  box-shadow: 0 0 10px var(--red-glow);
+  background-color: #130d24;
+}
+
+.form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.label-with-counter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.4rem;
+}
+
+.label-with-counter label {
+  margin-bottom: 0;
+}
+
+.char-counter {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.char-counter.limit-reached {
+  color: var(--red-primary);
+  font-weight: 700;
+}
+
+.form-group textarea {
+  resize: none;
+  min-height: 90px;
+}
+
+.form-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  margin-top: 1.5rem;
+}
+
+.btn-secondary {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  padding: 0.65rem 1.2rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* =========================================
+   ÁREA DE COLAR IMAGEM (DROPZONE)
+   ========================================= */
+.paste-zone {
+  position: relative;
+  width: 100%;
+  min-height: 140px;
+  background-color: #0e0a1a;
+  border: 2px dashed var(--border-color);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  outline: none;
+  overflow: hidden;
+  transition: border-color 0.25s, background-color 0.25s, box-shadow 0.25s;
+  padding: 1rem;
+}
+
+.paste-zone[contenteditable="true"] {
+  -webkit-user-select: text;
+  user-select: text;
+  caret-color: transparent;
+}
+
+.paste-zone * {
+  pointer-events: auto;
+}
+
+.paste-zone:focus,
+.paste-zone:hover {
+  border-color: var(--red-primary);
+  background-color: #130d24;
+  box-shadow: 0 0 12px var(--red-glow);
+}
+
+.paste-zone-placeholder {
+  text-align: center;
+  pointer-events: none;
+}
+
+.paste-icon {
+  font-size: 2rem;
+  display: block;
+  margin-bottom: 0.35rem;
+}
+
+.paste-main-text {
+  font-size: 0.85rem;
+  color: var(--text-main);
+  font-weight: 500;
+}
+
+.paste-main-text strong {
+  color: var(--red-primary);
+}
+
+.paste-sub-text {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 0.25rem;
+}
+
+.paste-preview-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-height: 160px;
+  width: 100%;
+}
+
+.paste-preview-img {
+  max-height: 150px;
+  max-width: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--green-accent);
+  box-shadow: 0 0 10px rgba(42, 157, 143, 0.3);
+}
+
+.btn-remove-pasted {
+  position: absolute;
+  top: -6px;
+  right: 15%;
+  background: var(--danger-color);
+  color: #fff;
+  border: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  font-weight: 700;
+  font-size: 0.8rem;
+  cursor: pointer;
+  box-shadow: 0 0 8px rgba(255, 51, 102, 0.5);
+  transition: transform 0.2s, background 0.2s;
+}
+
+.btn-remove-pasted:hover {
+  background: var(--danger-hover);
+  transform: scale(1.15);
+}
+
+/* Jumpscare */
+.jumpscare-overlay {
+  position: fixed;
+  inset: 0;
+  background: #000000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 99999;
+  overflow: hidden;
+}
+
+.jumpscare-overlay.is-active {
+  display: flex;
+}
+
+.jumpscare-face {
+  font-size: 8rem;
+  animation: scarePulse 0.15s infinite alternate;
+  filter: drop-shadow(0 0 50px var(--danger-color));
+}
+
+@keyframes scarePulse {
+  0% { transform: scale(1) rotate(-3deg); filter: drop-shadow(0 0 40px var(--danger-color)); }
+  100% { transform: scale(1.3) rotate(4deg); filter: drop-shadow(0 0 80px #ffffff); }
+}
+
+/* =========================================
+   BREAKPOINTS RESPONSIVOS
+   ========================================= */
+@media (min-width: 640px) {
+  .controls-section {
+    flex-direction: row;
+    align-items: center;
   }
 
-  if (!firebase.apps.length) {
-    firebase.initializeApp(firebaseConfig);
-  }
-  const auth = firebase.auth();
-  const db = firebase.firestore();
-
-  const loginSection = document.querySelector('#login-section');
-  const loginCard = document.querySelector('#login-card');
-  const loginForm = document.querySelector('#login-form');
-  const loginUser = document.querySelector('#login-user');
-  const loginPass = document.querySelector('#login-pass');
-  const loginFeedback = document.querySelector('#login-feedback');
-  const jumpscareOverlay = document.querySelector('#jumpscare-overlay');
-  const appWrapper = document.querySelector('#app-wrapper');
-  const btnLogout = document.querySelector('#btn-logout');
-  const greetingUsername = document.querySelector('#greeting-username');
-
-  // Modal Cadastro
-  const btnOpenRegister = document.querySelector('#btn-open-register');
-  const registerModal = document.querySelector('#register-modal');
-  const registerForm = document.querySelector('#register-form');
-  const regName = document.querySelector('#reg-name');
-  const regEmail = document.querySelector('#reg-email');
-  const regPassword = document.querySelector('#reg-password');
-  const registerFeedback = document.querySelector('#register-feedback');
-  const btnCancelRegister = document.querySelector('#btn-cancel-register');
-
-  const ruleUpper = document.querySelector('#rule-upper');
-  const ruleLower = document.querySelector('#rule-lower');
-  const ruleSpecial = document.querySelector('#rule-special');
-  const ruleLength = document.querySelector('#rule-length');
-
-  // Modal Recuperação de Senha
-  const btnOpenForgot = document.querySelector('#btn-open-forgot');
-  const forgotModal = document.querySelector('#forgot-modal');
-  const forgotForm = document.querySelector('#forgot-form');
-  const forgotEmail = document.querySelector('#forgot-email');
-  const forgotFeedback = document.querySelector('#forgot-feedback');
-  const btnCancelForgot = document.querySelector('#btn-cancel-forgot');
-
-  // Aplicação Principal
-  const weeksContainer = document.querySelector('#weeks-container');
-  const btnLoadMore = document.querySelector('#btn-load-more');
-  const loadMoreWrapper = document.querySelector('#load-more-wrapper');
-  const progressBar = document.querySelector('#progress-bar');
-  const progressText = document.querySelector('#progress-text');
-  const victoryModal = document.querySelector('#victory-modal');
-  const btnCloseModal = document.querySelector('#btn-close-modal');
-  const searchInput = document.querySelector('#search-input');
-  const btnClearSearch = document.querySelector('#btn-clear-search');
-
-  // Formulário de Filme & Dropzone
-  const movieFormModal = document.querySelector('#movie-form-modal');
-  const movieForm = document.querySelector('#movie-form');
-  const btnOpenAddModal = document.querySelector('#btn-open-add-modal');
-  const btnCancelForm = document.querySelector('#btn-cancel-form');
-  const formModalTitle = document.querySelector('#form-modal-title');
-
-  const inputId = document.querySelector('#movie-id');
-  const inputTitle = document.querySelector('#movie-title-input');
-  const inputCover = document.querySelector('#movie-cover-input');
-  const pasteZone = document.querySelector('#paste-zone');
-  const pastePlaceholder = document.querySelector('#paste-placeholder');
-  const pastePreviewWrapper = document.querySelector('#paste-preview-wrapper');
-  const pastePreviewImg = document.querySelector('#paste-preview-img');
-  const btnRemovePasted = document.querySelector('#btn-remove-pasted');
-
-  const inputWeek = document.querySelector('#movie-week-input');
-  const inputDay = document.querySelector('#movie-day-input');
-  const inputGenre = document.querySelector('#movie-genre-input');
-  const inputSynopsis = document.querySelector('#movie-synopsis-input');
-  const synopsisCounter = document.querySelector('#synopsis-counter');
-
-  const deleteModal = document.querySelector('#delete-confirm-modal');
-  const deleteModalText = document.querySelector('#delete-modal-text');
-  const btnCancelDelete = document.querySelector('#btn-cancel-delete');
-  const btnConfirmDelete = document.querySelector('#btn-confirm-delete');
-  
-  let currentMovies = [];
-  let visibleWeeks = 1;
-  let searchQuery = '';
-  let movieToDeleteId = null;
-
-  // Alternador de Visibilidade da Senha
-  document.querySelectorAll('.btn-toggle-pass').forEach(button => {
-    button.addEventListener('click', (e) => {
-      e.preventDefault();
-      const targetId = button.dataset.target;
-      const passInput = document.getElementById(targetId);
-      if (!passInput) return;
-
-      const isPassword = passInput.type === 'password';
-      passInput.type = isPassword ? 'text' : 'password';
-      button.textContent = isPassword ? '👁️' : '🙈';
-      
-      passInput.focus();
-      const val = passInput.value;
-      passInput.value = '';
-      passInput.value = val;
-    });
-  });
-
-  if (localStorage.getItem(LOCAL_AUTH_CACHE_KEY) === 'true') {
-    appWrapper.classList.remove('is-hidden');
-    loginSection.classList.add('is-hidden');
+  .movies-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.25rem;
   }
 
-  // ==========================================
-  // MONITORAMENTO DE AUTENTICAÇÃO
-  // ==========================================
-  auth.onAuthStateChanged(async (user) => {
-    if (user) {
-      localStorage.setItem(LOCAL_AUTH_CACHE_KEY, 'true');
-
-      let finalName = user.displayName || localStorage.getItem('xmas_user_name');
-
-      if (!finalName) {
-        try {
-          const userDoc = await db.collection('users').doc(user.uid).get();
-          if (userDoc.exists && userDoc.data().name) {
-            finalName = userDoc.data().name;
-            localStorage.setItem('xmas_user_name', finalName);
-          }
-        } catch (err) {
-          console.warn("Não foi possível buscar usuário no Firestore:", err);
-        }
-      }
-
-      greetingUsername.textContent = finalName || (user.email ? user.email.split('@')[0] : 'Criatura');
-
-      loginSection.classList.add('is-hidden');
-      registerModal.classList.remove('is-active');
-      forgotModal.classList.remove('is-active');
-      appWrapper.classList.remove('is-hidden');
-      listenToFirestoreMovies();
-    } else {
-      localStorage.removeItem(LOCAL_AUTH_CACHE_KEY);
-      localStorage.removeItem('xmas_user_name');
-      appWrapper.classList.add('is-hidden');
-      loginSection.classList.remove('is-hidden');
-    }
-  });
-
-  // Login
-  loginForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const email = loginUser.value.trim();
-    const pass = loginPass.value.trim();
-
-    auth.signInWithEmailAndPassword(email, pass)
-      .then(() => {
-        loginFeedback.textContent = "Acesso concedido... Bem-vindo(a) ao Chalé! 🛷";
-        loginFeedback.className = "login-feedback is-success";
-        loginCard.classList.add('is-success');
-        triggerWelcomeBats();
-
-        setTimeout(() => {
-          loginCard.classList.remove('is-success');
-          loginFeedback.textContent = "";
-          loginFeedback.className = "login-feedback";
-          loginForm.reset();
-        }, 1000);
-      })
-      .catch((error) => {
-        console.warn("Falha no login:", error.code, error.message);
-        loginFeedback.textContent = "CREDENCIAL INVÁLIDA! O GRINCH REJEITA VOCÊ! 👺";
-        loginFeedback.className = "login-feedback is-error";
-        loginCard.classList.add('is-shaking');
-        jumpscareOverlay.classList.add('is-active');
-
-        setTimeout(() => jumpscareOverlay.classList.remove('is-active'), 1400);
-        setTimeout(() => loginCard.classList.remove('is-shaking'), 600);
-      });
-  });
-
-  btnLogout.addEventListener('click', () => {
-    localStorage.removeItem(LOCAL_AUTH_CACHE_KEY);
-    localStorage.removeItem('xmas_user_name');
-    auth.signOut();
-  });
-
-  // ==========================================
-  // CADASTRO / CRIAR CONTA
-  // ==========================================
-  function validatePassword(pass) {
-    const hasUpper = /[A-Z]/.test(pass);
-    const hasLower = /[a-z]/.test(pass);
-    const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(pass);
-    const hasLength = pass.length >= 6;
-
-    toggleRule(ruleUpper, hasUpper, "1 letra maiúscula");
-    toggleRule(ruleLower, hasLower, "1 letra minúscula");
-    toggleRule(ruleSpecial, hasSpecial, "1 caractere especial");
-    toggleRule(ruleLength, hasLength, "Mínimo de 6 caracteres");
-
-    return hasUpper && hasLower && hasSpecial && hasLength;
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1.6fr;
   }
 
-  function toggleRule(element, isValid, labelText) {
-    if (isValid) {
-      element.classList.add('valid');
-      element.textContent = `✔ ${labelText}`;
-    } else {
-      element.classList.remove('valid');
-      element.textContent = `✖ Pelo menos ${labelText}`;
-    }
+  .btn-load-more {
+    width: auto;
+    padding: 0.85rem 2.5rem;
+    border-radius: 30px;
   }
 
-  regPassword.addEventListener('input', () => {
-    validatePassword(regPassword.value);
-  });
+  .jumpscare-face {
+    font-size: 14rem;
+  }
+}
 
-  btnOpenRegister.addEventListener('click', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    registerForm.reset();
-    registerFeedback.textContent = '';
-    registerFeedback.className = 'login-feedback';
-    validatePassword('');
-    
-    registerModal.classList.add('is-active');
-    setTimeout(() => regName.focus(), 50);
-  });
-
-  btnCancelRegister.addEventListener('click', () => {
-    registerModal.classList.remove('is-active');
-  });
-
-  registerForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const name = regName.value.trim();
-    const email = regEmail.value.trim();
-    const pass = regPassword.value.trim();
-
-    if (!name) {
-      registerFeedback.textContent = "Digite seu nome ou alcunha!";
-      registerFeedback.className = "login-feedback is-error";
-      return;
-    }
-
-    if (!validatePassword(pass)) {
-      registerFeedback.textContent = "A senha não cumpre toda a magia exigida!";
-      registerFeedback.className = "login-feedback is-error";
-      return;
-    }
-
-    registerFeedback.textContent = "Adicionando novo ajudante na lista...";
-    registerFeedback.className = "login-feedback";
-
-    try {
-      const userCredential = await auth.createUserWithEmailAndPassword(email, pass);
-      const user = userCredential.user;
-
-      await user.updateProfile({ displayName: name });
-
-      await db.collection('users').doc(user.uid).set({
-        name: name,
-        email: email,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
-
-      localStorage.setItem('xmas_user_name', name);
-      greetingUsername.textContent = name;
-
-      registerFeedback.textContent = `Lista assinada, ${name}! Entrando no chalé...`;
-      registerFeedback.className = "login-feedback is-success";
-      triggerWelcomeBats();
-
-      setTimeout(() => {
-        registerModal.classList.remove('is-active');
-        registerForm.reset();
-      }, 1200);
-
-    } catch (error) {
-      let msg = "Erro ao criar conta. Tente novamente.";
-      if (error.code === 'auth/email-already-in-use') {
-        msg = "Este e-mail já pertence a outra ajudante!";
-      } else if (error.code === 'auth/invalid-email') {
-        msg = "O formato do e-mail é inválido!";
-      }
-      registerFeedback.textContent = msg;
-      registerFeedback.className = "login-feedback is-error";
-    }
-  });
-
-  // ==========================================
-  // RECUPERAÇÃO DE SENHA
-  // ==========================================
-  btnOpenForgot.addEventListener('click', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    forgotForm.reset();
-    forgotFeedback.textContent = '';
-    forgotFeedback.className = 'login-feedback';
-
-    if (loginUser.value.trim()) {
-      forgotEmail.value = loginUser.value.trim();
-    }
-
-    forgotModal.classList.add('is-active');
-    setTimeout(() => forgotEmail.focus(), 50);
-  });
-
-  btnCancelForgot.addEventListener('click', () => {
-    forgotModal.classList.remove('is-active');
-  });
-
-  forgotForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const email = forgotEmail.value.trim();
-
-    forgotFeedback.textContent = "Consultando o Pai Natal...";
-    forgotFeedback.className = "login-feedback";
-
-    auth.sendPasswordResetEmail(email)
-      .then(() => {
-        forgotFeedback.textContent = "Magia enviada! Verifique sua caixa de entrada 🦌";
-        forgotFeedback.className = "login-feedback is-success";
-
-        setTimeout(() => {
-          forgotModal.classList.remove('is-active');
-          forgotForm.reset();
-        }, 2200);
-      })
-      .catch((error) => {
-        let msg = "Erro ao enviar magia. Tente novamente.";
-        if (error.code === 'auth/user-not-found') {
-          msg = "Nenhum ajudante encontrado com este e-mail!";
-        } else if (error.code === 'auth/invalid-email') {
-          msg = "Formato de e-mail inválido!";
-        }
-        forgotFeedback.textContent = msg;
-        forgotFeedback.className = "login-feedback is-error";
-      });
-  });
-
-  // ==========================================
-  // PROCESSAMENTO DE IMAGEM (COLAR & COMPRIMIR)
-  // ==========================================
-  function processAndCompressImage(file) {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const img = new Image();
-      img.onload = () => {
-        const maxWidth = 420;
-        let width = img.width;
-        let height = img.height;
-
-        if (width > maxWidth) {
-          height = Math.round((height * maxWidth) / width);
-          width = maxWidth;
-        }
-
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, width, height);
-
-        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.72);
-        setCoverPreview(compressedBase64);
-      };
-      img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
+@media (min-width: 1024px) {
+  .app-wrapper {
+    padding: 2rem 3rem;
+    border-top: none;
+    border-bottom: none;
   }
 
-  function setCoverPreview(base64OrUrl) {
-    if (base64OrUrl && base64OrUrl.trim()) {
-      inputCover.value = base64OrUrl;
-      pastePreviewImg.src = base64OrUrl;
-      pastePreviewWrapper.classList.remove('is-hidden');
-      pastePlaceholder.classList.add('is-hidden');
-    } else {
-      inputCover.value = '';
-      pastePreviewImg.src = '';
-      pastePreviewWrapper.classList.add('is-hidden');
-      pastePlaceholder.classList.remove('is-hidden');
-    }
+  .main-title {
+    font-size: 3.8rem;
   }
 
-  function handleImagePaste(e) {
-    const clipboard = e.clipboardData || (e.originalEvent && e.originalEvent.clipboardData);
-    if (!clipboard) return;
-
-    // 1. Tenta capturar arquivo direto (PC e navegadores compatíveis)
-    if (clipboard.items) {
-      for (const item of clipboard.items) {
-        if (item.type.indexOf('image') !== -1) {
-          const file = item.getAsFile();
-          if (file) {
-            e.preventDefault();
-            processAndCompressImage(file);
-            cleanPasteZoneText();
-            return;
-          }
-        }
-      }
-    }
-
-    // 2. Fallback para celulares que transferem imagem como fragmento HTML
-    const htmlData = clipboard.getData('text/html');
-    if (htmlData) {
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(htmlData, 'text/html');
-      const img = doc.querySelector('img');
-      if (img && img.src) {
-        e.preventDefault();
-        if (img.src.startsWith('data:image/')) {
-          setCoverPreview(img.src);
-        } else {
-          fetch(img.src)
-            .then(res => res.blob())
-            .then(blob => processAndCompressImage(blob))
-            .catch(() => setCoverPreview(img.src));
-        }
-        cleanPasteZoneText();
-        return;
-      }
-    }
+  .week-container {
+    padding: 2rem;
   }
 
-  function cleanPasteZoneText() {
-    setTimeout(() => {
-      const nodes = Array.from(pasteZone.childNodes);
-      nodes.forEach(node => {
-        if (node.nodeType === Node.TEXT_NODE) {
-          node.remove();
-        }
-      });
-    }, 10);
+  .week-title {
+    font-size: 2.2rem;
   }
 
-  pasteZone.addEventListener('paste', handleImagePaste);
-  window.addEventListener('paste', (e) => {
-    if (movieFormModal.classList.contains('is-active')) {
-      handleImagePaste(e);
-    }
-  });
-
-  btnRemovePasted.addEventListener('click', (e) => {
-    e.stopPropagation();
-    setCoverPreview('');
-  });
-
-  function triggerWelcomeBats() {
-    if (typeof confetti !== 'function') return;
-    confetti({
-      particleCount: 80,
-      spread: 100,
-      origin: { y: 0.6 },
-      colors: ['#E63946', '#2A9D8F', '#F4A261', '#FFFFFF']
-    });
+  .movies-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
   }
 
-  function listenToFirestoreMovies() {
-    db.collection('movies').onSnapshot((snapshot) => {
-      currentMovies = [];
-      snapshot.forEach(doc => {
-        currentMovies.push({ id: doc.id, ...doc.data() });
-      });
-      renderApp();
-    }, (error) => {
-      console.error("Erro ao sincronizar com Firestore:", error);
-    });
+  .btn-load-more:hover {
+    background: var(--red-primary);
+    color: #0b0813;
+    box-shadow: 0 0 18px var(--red-glow);
+    transform: translateY(-2px);
   }
 
-  function updateSynopsisCounter() {
-    const currentLength = inputSynopsis.value.length;
-    synopsisCounter.textContent = `${currentLength} / ${MAX_SYNOPSIS}`;
-
-    if (currentLength >= MAX_SYNOPSIS) {
-      synopsisCounter.classList.add('limit-reached');
-    } else {
-      synopsisCounter.classList.remove('limit-reached');
-    }
+  .movie-card:hover {
+    background-color: var(--bg-card-hover);
+    border-color: var(--green-accent);
+    transform: translateY(-3px);
   }
 
-  inputSynopsis.addEventListener('input', updateSynopsisCounter);
-
-  function renderApp() {
-    weeksContainer.replaceChildren();
-
-    const marathonData = groupMoviesByWeek(currentMovies);
-    const term = searchQuery.toLowerCase().trim();
-    const targetWeek = parseWeekSearch(term);
-
-    if (currentMovies.length === 0) {
-      const emptyDiv = document.createElement('div');
-      emptyDiv.className = 'no-results';
-      emptyDiv.innerHTML = `
-        <p>Nenhum filme cadastrado na maratona ainda 🎄</p>
-        <p class="empty-state-subtitle">Clique no botão <strong>"Novo Filme ➕"</strong> acima para começar!</p>
-      `;
-      weeksContainer.appendChild(emptyDiv);
-      loadMoreWrapper.classList.add('is-hidden');
-      updateProgress(0, 0);
-      return;
-    }
-
-    if (term !== '') {
-      loadMoreWrapper.classList.add('is-hidden');
-    } else {
-      if (visibleWeeks >= marathonData.length) {
-        loadMoreWrapper.classList.add('is-hidden');
-      } else {
-        loadMoreWrapper.classList.remove('is-hidden');
-      }
-    }
-
-    let totalMatches = 0;
-    let watchedCount = 0;
-
-    currentMovies.forEach(m => {
-      if (m.watched) watchedCount++;
-    });
-
-    marathonData.forEach((week, index) => {
-      if (term === '' && index >= visibleWeeks) return;
-
-      let filteredMovies = week.movies;
-
-      if (term !== '') {
-        if (targetWeek !== null) {
-          if (week.weekNumber !== targetWeek) return;
-        } else {
-          filteredMovies = week.movies.filter(movie => 
-            movie.title.toLowerCase().includes(term) ||
-            movie.genre.toLowerCase().includes(term)
-          );
-          if (filteredMovies.length === 0) return;
-        }
-      }
-
-      totalMatches += filteredMovies.length;
-
-      const weekEl = document.createElement('section');
-      weekEl.className = 'week-container';
-
-      weekEl.innerHTML = `
-        <div class="week-header">
-          <h2 class="week-title">Semana 0${week.weekNumber}: ${week.weekTitle}</h2>
-          <span class="week-badge">${filteredMovies.length} Filme(s)</span>
-        </div>
-        <div class="movies-grid"></div>
-      `;
-
-      const grid = weekEl.querySelector('.movies-grid');
-
-      filteredMovies.forEach(movie => {
-        const isWatched = Boolean(movie.watched);
-        const resolvedCover = resolveCoverUrl(movie);
-
-        const card = document.createElement('article');
-        card.className = `movie-card ${isWatched ? 'is-watched' : ''}`;
-        card.id = `card-${movie.id}`;
-
-        card.innerHTML = `
-          <span class="card-day-tag">📅 ${movie.day}</span>
-          <div class="card-admin-actions">
-            <button type="button" class="btn-card-util btn-edit-movie" data-id="${movie.id}" title="Editar Filme">✏️</button>
-            <button type="button" class="btn-card-util btn-delete-movie" data-id="${movie.id}" title="Excluir Filme">🗑️</button>
-          </div>
-          <div class="poster-container">
-            <img 
-              src="${resolvedCover}" 
-              alt="Poster de ${movie.title}" 
-              class="poster-img" 
-              loading="lazy" 
-              referrerpolicy="no-referrer"
-            >
-          </div>
-          <div class="card-body">
-            <span class="genre-badge">${movie.genre}</span>
-            <h3 class="movie-title">${movie.title}</h3>
-            <p class="movie-synopsis">${movie.synopsis}</p>
-            <div class="button-group">
-              <button type="button" class="btn-action btn-watched ${isWatched ? 'active-watched' : ''}" data-id="${movie.id}">
-                Assisti ✔
-              </button>
-              <button type="button" class="btn-action btn-unwatched ${!isWatched ? 'active-unwatched' : ''}" data-id="${movie.id}">
-                Não assisti ✕
-              </button>
-            </div>
-          </div>
-        `;
-
-        const imgEl = card.querySelector('.poster-img');
-        imgEl.addEventListener('error', () => {
-          imgEl.src = resolveCoverUrl({ title: movie.title, cover: '' });
-        }, { once: true });
-
-        grid.appendChild(card);
-      });
-
-      weeksContainer.appendChild(weekEl);
-    });
-
-    if (term !== '' && totalMatches === 0) {
-      const notFoundDiv = document.createElement('div');
-      notFoundDiv.className = 'no-results';
-      notFoundDiv.innerHTML = `<p>Nenhum filme ou semana encontrada para "<strong>${searchQuery}</strong>" 🎄</p>`;
-      weeksContainer.appendChild(notFoundDiv);
-    }
-
-    updateProgress(watchedCount, currentMovies.length);
+  .movie-card:hover .poster-img {
+    transform: scale(1.03);
   }
+}
 
-  // ==========================================
-  // OPERAÇÕES DO FIRESTORE (CRUD + STATUS)
-  // ==========================================
-  weeksContainer.addEventListener('click', (e) => {
-    const btnAction = e.target.closest('.btn-action');
-    if (btnAction) {
-      const movieId = btnAction.dataset.id;
-      const isWatched = btnAction.classList.contains('btn-watched');
-      db.collection('movies').doc(movieId).update({ watched: isWatched });
-      return;
-    }
-
-    const btnEdit = e.target.closest('.btn-edit-movie');
-    if (btnEdit) {
-      const id = btnEdit.dataset.id;
-      const movie = currentMovies.find(m => m.id === id);
-      if (!movie) return;
-
-      formModalTitle.textContent = "Editar Filme";
-      inputId.value = movie.id;
-      inputTitle.value = movie.title;
-      setCoverPreview(movie.cover || '');
-      inputWeek.value = movie.weekNumber || 1;
-      inputDay.value = movie.day;
-      inputGenre.value = movie.genre;
-      inputSynopsis.value = movie.synopsis;
-
-      updateSynopsisCounter();
-      movieFormModal.classList.add('is-active');
-      return;
-    }
-
-    const btnDelete = e.target.closest('.btn-delete-movie');
-    if (btnDelete) {
-      const id = btnDelete.dataset.id;
-      const movie = currentMovies.find(m => m.id === id);
-      if (!movie) return;
-
-      movieToDeleteId = id;
-      deleteModalText.innerHTML = `Tem certeza que deseja remover <strong>"${movie.title}"</strong> da maratona?`;
-      deleteModal.classList.add('is-active');
-    }
-  });
-
-  btnCancelDelete.addEventListener('click', () => {
-    movieToDeleteId = null;
-    deleteModal.classList.remove('is-active');
-  });
-
-  btnConfirmDelete.addEventListener('click', () => {
-    if (!movieToDeleteId) return;
-    db.collection('movies').doc(movieToDeleteId).delete()
-      .then(() => {
-        deleteModal.classList.remove('is-active');
-        movieToDeleteId = null;
-      });
-  });
-
-  movieForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const id = inputId.value;
-
-    const movieData = {
-      title: inputTitle.value.trim(),
-      cover: inputCover.value.trim(),
-      weekNumber: parseInt(inputWeek.value, 10),
-      day: inputDay.value.trim(),
-      genre: inputGenre.value.trim(),
-      synopsis: inputSynopsis.value.trim()
-    };
-
-    if (id) {
-      db.collection('movies').doc(id).update(movieData)
-        .then(() => movieFormModal.classList.remove('is-active'));
-    } else {
-      movieData.watched = false;
-      movieData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-      db.collection('movies').add(movieData)
-        .then(() => movieFormModal.classList.remove('is-active'));
-    }
-  });
-
-  btnOpenAddModal.addEventListener('click', () => {
-    movieForm.reset();
-    inputId.value = '';
-    setCoverPreview('');
-    formModalTitle.textContent = "Novo Filme";
-    updateSynopsisCounter();
-    movieFormModal.classList.add('is-active');
-  });
-
-  btnCancelForm.addEventListener('click', () => {
-    movieFormModal.classList.remove('is-active');
-  });
-
-  function updateProgress(watchedCount, totalMovies) {
-    const percent = totalMovies > 0 ? Math.round((watchedCount / totalMovies) * 100) : 0;
-
-    progressBar.style.width = `${percent}%`;
-    progressText.textContent = `${watchedCount} / ${totalMovies} assistidos (${percent}%)`;
-
-    if (totalMovies > 0 && watchedCount === totalMovies) {
-      triggerVictoryConfetti();
-      setTimeout(() => {
-        victoryModal.classList.add('is-active');
-      }, 1000);
-    }
+@media (min-width: 1360px) {
+  .movies-grid {
+    grid-template-columns: repeat(4, 1fr);
   }
-
-  searchInput.addEventListener('input', (e) => {
-    searchQuery = e.target.value;
-    if (searchQuery) {
-      btnClearSearch.classList.add('is-active');
-    } else {
-      btnClearSearch.classList.remove('is-active');
-    }
-    renderApp();
-  });
-
-  btnClearSearch.addEventListener('click', () => {
-    searchInput.value = '';
-    searchQuery = '';
-    btnClearSearch.classList.remove('is-active');
-    renderApp();
-    searchInput.focus();
-  });
-
-  btnLoadMore.addEventListener('click', () => {
-    const groups = groupMoviesByWeek(currentMovies);
-    if (visibleWeeks < groups.length) {
-      visibleWeeks++;
-      renderApp();
-    }
-  });
-
-  btnCloseModal.addEventListener('click', () => {
-    victoryModal.classList.remove('is-active');
-  });
-
-  function triggerVictoryConfetti() {
-    if (typeof confetti !== 'function') return;
-    const count = 180;
-    const defaults = { origin: { y: 0.7 } };
-
-    function fire(particleRatio, opts) {
-      confetti(Object.assign({}, defaults, opts, {
-        particleCount: Math.floor(count * particleRatio)
-      }));
-    }
-
-    fire(0.25, { spread: 26, startVelocity: 55, colors: ['#E63946', '#2A9D8F'] });
-    fire(0.2, { spread: 60, colors: ['#ffffff', '#E63946'] });
-    fire(0.35, { spread: 100, decay: 0.91, scalar: 0.8, colors: ['#2A9D8F', '#F25C69'] });
-    fire(0.1, { spread: 120, startVelocity: 25, decay: 0.92, scalar: 1.2, colors: ['#8AB17D'] });
-    fire(0.1, { spread: 120, startVelocity: 45, colors: ['#ff6b00'] });
-  }
-});
-
+}
