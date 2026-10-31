@@ -509,7 +509,7 @@ body {
   transition: background-color 0.25s, border-color 0.25s, transform 0.25s;
 }
 
-.card-day-tag {
+.card-streaming-tag {
   background: rgba(11, 8, 19, 0.85);
   color: var(--red-primary);
   font-size: 0.75rem;
@@ -656,7 +656,7 @@ body {
 }
 
 .movie-card.is-watched .movie-synopsis,
-.movie-card.is-watched .card-day-tag,
+.movie-card.is-watched .card-streaming-tag,
 .movie-card.is-watched .genre-badge {
   color: #52525b;
   background: transparent;
