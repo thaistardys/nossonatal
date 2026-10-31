@@ -130,7 +130,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnRemovePasted = document.querySelector('#btn-remove-pasted');
 
   const inputWeek = document.querySelector('#movie-week-input');
-  const inputDay = document.querySelector('#movie-day-input');
+  const inputStreaming = document.querySelector('#movie-streaming-input');
   const inputGenre = document.querySelector('#movie-genre-input');
   const inputSynopsis = document.querySelector('#movie-synopsis-input');
   const synopsisCounter = document.querySelector('#synopsis-counter');
@@ -613,6 +613,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const grid = weekEl.querySelector('.movies-grid');
 
+        const getStreamingDisplay = (service) => {
+          const map = {
+            'Netflix': 'Netflix 🔴',
+            'Max': 'Max 🟣',
+            'Disney+': 'Disney+ 🏰',
+            'Apple TV+': 'Apple TV+ 🍎',
+            'Torrent': 'Torrent 🏴‍☠️'
+          };
+          return map[service] || `📺 ${service || 'Desconhecido'}`;
+        };
+
+
       filteredMovies.forEach(movie => {
         const isWatched = Boolean(movie.watched);
         const resolvedCover = resolveCoverUrl(movie);
@@ -695,7 +707,7 @@ document.addEventListener('DOMContentLoaded', () => {
       inputTitle.value = movie.title;
       setCoverPreview(movie.cover || '');
       inputWeek.value = movie.weekNumber || 1;
-      inputDay.value = movie.day;
+      inputStreaming.value = movie.streaming || '';
       inputGenre.value = movie.genre;
       inputSynopsis.value = movie.synopsis;
 
@@ -738,7 +750,7 @@ document.addEventListener('DOMContentLoaded', () => {
       title: inputTitle.value.trim(),
       cover: inputCover.value.trim(),
       weekNumber: parseInt(inputWeek.value, 10),
-      day: inputDay.value.trim(),
+      streaming: inputStreaming.value.trim(),
       genre: inputGenre.value.trim(),
       synopsis: inputSynopsis.value.trim()
     };
