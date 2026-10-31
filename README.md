@@ -2,7 +2,7 @@
 
 Pegue uma xícara de chocolate quente, vista seu suéter favorito e puxe uma cadeira perto da lareira! Este é o painel interativo oficial da nossa Maratona de Natal, um espacinho mágico construído para organizar, descobrir e acompanhar todos os filmes clássicos e aconchegantes que vão aquecer o nosso mês de dezembro.
 
-✨ Acesse o Chalé e viva a magia: nossonatal.vercel.app ✨
+✨ Acesse o Chalé e viva a magia: https://nossonatal.vercel.app ✨
 
 🎅 O que é o projeto?
 
